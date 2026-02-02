@@ -245,7 +245,7 @@ app.post('/products', (req, res, next) => {
     if (productErr) {
       console.error('Product insert:', productErr.message);
       await supabase.storage.from(IMAGES_BUCKET).remove([fileName]);
-      return res.status(500).json({ error: 'Failed to create product' });
+      return res.status(500).json({ error: 'Failed to create product', detail: productErr.message });
     }
 
     res.status(201).json({
