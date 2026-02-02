@@ -229,17 +229,16 @@ app.post('/products', (req, res, next) => {
     const imageUrl = urlData.publicUrl;
 
     // Create product (Supabase table has "name" column for product name)
+    const productRow = {
+      name: productName || 'Untitled',
+      product_name: productName,
+      brand_name: brandName,
+      brand_id: brand.id,
+      product_image: imageUrl,
+    };
     const { data: product, error: productErr } = await supabase
       .from('products')
-      .insert([
-        {
-          name: productName,
-          product_name: productName,
-          brand_name: brandName,
-          brand_id: brand.id,
-          product_image: imageUrl,
-        },
-      ])
+      .insert([productRow])
       .select('id, name, product_name, brand_name, product_image')
       .single();
 
