@@ -231,7 +231,6 @@ app.post('/products', (req, res, next) => {
     // Create product (Supabase table has "name" column for product name)
     const productRow = {
       name: productName || 'Untitled',
-      product_name: productName,
       brand_name: brandName,
       brand_id: brand.id,
       product_image: imageUrl,
