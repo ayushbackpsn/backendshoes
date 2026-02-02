@@ -133,7 +133,7 @@ app.get('/brands/:id/products', async (req, res) => {
 
     const { data, error } = await supabase
       .from('products')
-      .select('id, product_name, brand_name, product_image')
+      .select('id, name, product_name, brand_name, product_image')
       .eq('brand_id', brandId);
 
     if (error) {
@@ -143,7 +143,7 @@ app.get('/brands/:id/products', async (req, res) => {
 
     const out = (data || []).map((p) => ({
       _id: p.id,
-      product_name: p.product_name,
+      product_name: p.product_name ?? p.name,
       brand_name: p.brand_name,
       product_image: p.product_image || '',
     }));
@@ -228,18 +228,19 @@ app.post('/products', (req, res, next) => {
       .getPublicUrl(fileName);
     const imageUrl = urlData.publicUrl;
 
-    // Create product
+    // Create product (Supabase table has "name" column for product name)
     const { data: product, error: productErr } = await supabase
       .from('products')
       .insert([
         {
+          name: productName,
           product_name: productName,
           brand_name: brandName,
           brand_id: brand.id,
           product_image: imageUrl,
         },
       ])
-      .select('id, product_name, brand_name, product_image')
+      .select('id, name, product_name, brand_name, product_image')
       .single();
 
     if (productErr) {
@@ -252,7 +253,7 @@ app.post('/products', (req, res, next) => {
       message: 'Product created successfully',
       product: {
         _id: product.id,
-        product_name: product.product_name,
+        product_name: product.product_name ?? product.name,
         brand_name: product.brand_name,
         product_image: product.product_image,
       },
@@ -273,7 +274,7 @@ app.post('/pdf/generate', async (req, res) => {
 
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, product_name, brand_name, product_image')
+      .select('id, name, product_name, brand_name, product_image')
       .in('id', product_ids);
 
     if (error || !products?.length) {
@@ -316,7 +317,7 @@ app.post('/pdf/generate', async (req, res) => {
         align: 'center',
       });
       doc.fontSize(18);
-      doc.text('Name: ' + (p.product_name || ''), margin, margin + 60, {
+      doc.text('Name: ' + (p.product_name ?? p.name || ''), margin, margin + 60, {
         width: contentWidth,
         align: 'center',
       });
