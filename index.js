@@ -201,8 +201,11 @@ app.post('/products', (req, res, next) => {
     }
 
     // Resize and upload image (fallback to original if Sharp fails)
+    if (!req.file.buffer || req.file.buffer.length === 0) {
+      return res.status(400).json({ error: 'Image file is empty or corrupted' });
+    }
     const ext = path.extname(req.file.originalname) || '.jpg';
-    const fileName = uniqueFilename(ext);
+    const fileName = uniqueFilename(ext.endsWith('.jpg') || ext.endsWith('.jpeg') ? ext : '.jpg');
 
     let bufferToUpload = req.file.buffer;
     try {
@@ -321,16 +324,30 @@ app.post('/pdf/generate', async (req, res) => {
         align: 'center',
       });
 
-      if (p.product_image) {
+      const imgUrl = p.product_image || p.product_image_url || p.image_url;
+      if (imgUrl) {
         try {
-          const imgRes = await fetch(p.product_image);
+          let imgBuf = null;
+          const imgRes = await fetch(imgUrl);
           if (imgRes.ok) {
-            const buf = Buffer.from(await imgRes.arrayBuffer());
-            doc.image(buf, margin, margin + 100, {
+            imgBuf = Buffer.from(await imgRes.arrayBuffer());
+          }
+          if (!imgBuf?.length && imgUrl.includes(IMAGES_BUCKET)) {
+            const match = imgUrl.match(/\/uploads\/([^?#]+)/) || imgUrl.match(/uploads%2F([^?#&]+)/);
+            const storagePath = match ? decodeURIComponent(match[1]) : imgUrl.split('/').pop();
+            const { data: dlData, error: dlErr } = await supabase.storage
+              .from(IMAGES_BUCKET)
+              .download(storagePath);
+            if (!dlErr && dlData) imgBuf = Buffer.from(await dlData.arrayBuffer());
+          }
+          if (imgBuf?.length) {
+            doc.image(imgBuf, margin, margin + 100, {
               fit: [contentWidth, imageAreaHeight],
               align: 'center',
               valign: 'center',
             });
+          } else {
+            doc.text('Image not available', margin, margin + 100);
           }
         } catch (e) {
           doc.text('Image not available', margin, margin + 100);
