@@ -315,7 +315,8 @@ app.post('/pdf/generate', async (req, res) => {
         align: 'center',
       });
       doc.fontSize(18);
-      doc.text('Name: ' + (p.product_name ?? p.name || ''), margin, margin + 60, {
+      // Use product_name if present, otherwise fall back to name, then empty string
+      doc.text('Name: ' + (p.product_name || p.name || ''), margin, margin + 60, {
         width: contentWidth,
         align: 'center',
       });
