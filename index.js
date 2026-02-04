@@ -250,6 +250,12 @@ app.post('/products', (req, res, next) => {
       return res.status(500).json({ error: 'Failed to create product', detail: productErr.message });
     }
 
+    // Ensure product_image is saved (some schemas need explicit update)
+    if (!product.product_image && imageUrl) {
+      await supabase.from('products').update({ product_image: imageUrl }).eq('id', product.id);
+      product.product_image = imageUrl;
+    }
+
     res.status(201).json({
       message: 'Product created successfully',
       product: {

@@ -15,3 +15,8 @@ create table if not exists products (
 );
 
 create index if not exists products_brand_id on products(brand_id);
+
+-- If product_image is missing or empty, ensure column exists:
+-- ALTER TABLE products ADD COLUMN IF NOT EXISTS product_image text;
+
+-- Check your columns: SELECT column_name FROM information_schema.columns WHERE table_name = 'products';
