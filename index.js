@@ -155,6 +155,7 @@ app.get('/brands/:id/products', async (req, res) => {
 });
 
 app.post('/products', (req, res, next) => {
+  // Back to single image upload for stability
   upload.single('product_image')(req, res, (err) => {
     if (err) {
       return res.status(400).json({
@@ -167,7 +168,8 @@ app.post('/products', (req, res, next) => {
   });
 }, async (req, res) => {
   try {
-    if (!req.file) {
+    const file = req.file;
+    if (!file) {
       return res.status(400).json({ error: 'Product image is required' });
     }
 
@@ -201,20 +203,21 @@ app.post('/products', (req, res, next) => {
     }
 
     // Resize and upload image (fallback to original if Sharp fails)
-    if (!req.file.buffer || req.file.buffer.length === 0) {
+    if (!file.buffer || file.buffer.length === 0) {
       return res.status(400).json({ error: 'Image file is empty or corrupted' });
     }
-    const ext = path.extname(req.file.originalname) || '.jpg';
+
+    const ext = path.extname(file.originalname) || '.jpg';
     const fileName = uniqueFilename(ext.endsWith('.jpg') || ext.endsWith('.jpeg') ? ext : '.jpg');
 
-    let bufferToUpload = req.file.buffer;
+    let bufferToUpload = file.buffer;
     try {
-      bufferToUpload = await sharp(req.file.buffer)
+      bufferToUpload = await sharp(file.buffer)
         .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: 90 })
         .toBuffer();
     } catch (sharpErr) {
-      // Use original buffer if resize fails (e.g. corrupt or minimal JPEG)
+      // Use original buffer if resize fails
     }
 
     const { error: uploadErr } = await supabase.storage
@@ -238,6 +241,7 @@ app.post('/products', (req, res, next) => {
       brand_id: brand.id,
       product_image: imageUrl,
     };
+
     const { data: product, error: productErr } = await supabase
       .from('products')
       .insert([productRow])
@@ -319,13 +323,13 @@ app.post('/pdf/generate', async (req, res) => {
 
       doc.rect(0, 0, 595, 842).fill('white');
       doc.fontSize(20).fillColor('black');
-      doc.text('Brand: ' + (p.brand_name || ''), margin, margin + 20, {
+      // Name first, then brand (as requested)
+      doc.text('Name: ' + (p.product_name || p.name || ''), margin, margin + 20, {
         width: contentWidth,
         align: 'center',
       });
       doc.fontSize(18);
-      // Use product_name if present, otherwise fall back to name, then empty string
-      doc.text('Name: ' + (p.product_name || p.name || ''), margin, margin + 60, {
+      doc.text('Brand: ' + (p.brand_name || ''), margin, margin + 60, {
         width: contentWidth,
         align: 'center',
       });
