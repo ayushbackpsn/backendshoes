@@ -4,7 +4,6 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const Product = require('../models/Product');
-const GeneratedPDF = require('../models/GeneratedPDF');
 
 // POST /pdf/generate
 router.post('/generate', async (req, res) => {
@@ -146,22 +145,12 @@ router.post('/generate', async (req, res) => {
       doc.on('error', reject);
     });
 
-    // Save PDF record to database
+    // Return direct download URL (no database storage)
     const baseUrl = req.protocol + '://' + req.get('host');
     const downloadUrl = `${baseUrl}/pdf/${filename}`;
 
-    const generatedPDF = new GeneratedPDF({
-      filename: filename,
-      filepath: filepath,
-      product_ids: product_ids,
-      download_url: downloadUrl
-    });
-
-    await generatedPDF.save();
-
     res.json({
       message: 'PDF generated successfully',
-      pdf_id: generatedPDF._id,
       filename: filename,
       download_url: downloadUrl
     });
