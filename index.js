@@ -368,12 +368,33 @@ app.post('/pdf/generate', async (req, res) => {
     doc.end();
     await streamDone;
 
-    // Return direct download URL (no Supabase storage upload)
-    const baseUrl = req.protocol + '://' + req.get('host');
-    const downloadUrl = `${baseUrl}/pdf/${filename}`;
+    // Upload PDF to Supabase Storage
+    const pdfBuffer = fs.readFileSync(filepath);
+    try {
+      fs.unlinkSync(filepath);
+    } catch (_) {}
+
+    const { error: pdfUploadErr } = await supabase.storage
+      .from(PDFS_BUCKET)
+      .upload(filename, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: false,
+      });
+
+    if (pdfUploadErr) {
+      console.error('PDF upload:', pdfUploadErr.message);
+      return res.status(500).json({ error: 'Failed to save PDF' });
+    }
+
+    const { data: pdfUrlData } = supabase.storage
+      .from(PDFS_BUCKET)
+      .getPublicUrl(filename);
+
+    const downloadUrl = pdfUrlData.publicUrl;
 
     res.json({
       message: 'PDF generated successfully',
+      pdf_id: timestamp.toString(),
       filename,
       download_url: downloadUrl,
     });
