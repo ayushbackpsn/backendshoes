@@ -29,6 +29,8 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+console.log('DEBUG: Supabase URL:', SUPABASE_URL);
+console.log('DEBUG: Supabase client initialized');
 const IMAGES_BUCKET = 'uploads';
 const PDFS_BUCKET = 'pdfs';
 
@@ -335,12 +337,16 @@ app.post('/pdf/generate', async (req, res) => {
       });
 
       const imgUrl = p.product_image || p.product_image_url || p.image_url;
+      console.log('DEBUG: Processing image URL:', imgUrl);
       if (imgUrl) {
         try {
           let imgBuf = null;
+          console.log('DEBUG: Attempting to fetch image...');
           const imgRes = await fetch(imgUrl);
+          console.log('DEBUG: Image fetch response:', imgRes.status, imgRes.ok);
           if (imgRes.ok) {
             imgBuf = Buffer.from(await imgRes.arrayBuffer());
+            console.log('DEBUG: Image fetched successfully, size:', imgBuf.length);
           }
           if (!imgBuf?.length && imgUrl.includes(IMAGES_BUCKET)) {
             const match = imgUrl.match(/\/uploads\/([^?#]+)/) || imgUrl.match(/uploads%2F([^?#&]+)/);
