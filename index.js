@@ -10,17 +10,31 @@ import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import dns from 'dns';
 
-// Set custom DNS servers to bypass India ban (Supabase recommended)
+// Set custom DNS servers to bypass India ban
 dns.setServers([
-  '1.1.1.1',        // Cloudflare (recommended by Supabase)
-  '8.8.8.8',        // Google (recommended by Supabase)  
-  '9.9.9.9',        // Quad9 (recommended by Supabase)
-  '1.0.0.1',        // Cloudflare secondary
-  '8.8.4.4'         // Google secondary
+  '1.1.1.1', '8.8.8.8', '9.9.9.9', '1.0.0.1', '8.8.4.4'
 ]);
-
 console.log('DNS servers set:', dns.getServers());
-console.log('Using Supabase recommended DNS providers to bypass India ban');
+
+// Simple Supabase client with basic fetch override
+const supabase = createClient(
+  process.env.SUPABASE_URL, 
+  process.env.SUPABASE_SERVICE_KEY,
+  {
+    global: {
+      fetch: (url, options = {}) => {
+        console.log('Fetching:', url);
+        return fetch(url, {
+          ...options,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; SupabaseClient/1.0)',
+            ...options.headers
+          }
+        });
+      }
+    }
+  }
+);
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
@@ -41,7 +55,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const IMAGES_BUCKET = 'uploads';
 const PDFS_BUCKET = 'pdfs';
 
