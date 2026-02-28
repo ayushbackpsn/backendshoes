@@ -7,7 +7,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
-import { dns } from 'dns';
+import dns from 'dns';
 
 // Set custom DNS servers to bypass India ban (Supabase recommended)
 dns.setServers([
