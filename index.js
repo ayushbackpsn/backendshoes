@@ -28,6 +28,8 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   process.exit(1);
 }
 
+// Initialize Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const IMAGES_BUCKET = 'uploads';
 const PDFS_BUCKET = 'pdfs';
 
