@@ -7,34 +7,8 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
-import dns from 'dns';
-
-// Set custom DNS servers to bypass India ban
-dns.setServers([
-  '1.1.1.1', '8.8.8.8', '9.9.9.9', '1.0.0.1', '8.8.4.4'
-]);
-console.log('DNS servers set:', dns.getServers());
-
-// Simple Supabase client with basic fetch override
-const supabase = createClient(
-  process.env.SUPABASE_URL, 
-  process.env.SUPABASE_SERVICE_KEY,
-  {
-    global: {
-      fetch: (url, options = {}) => {
-        console.log('Fetching:', url);
-        return fetch(url, {
-          ...options,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; SupabaseClient/1.0)',
-            ...options.headers
-          }
-        });
-      }
-    }
-  }
-);
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
@@ -416,7 +390,7 @@ app.post('/pdf/generate', async (req, res) => {
       .from(PDFS_BUCKET)
       .getPublicUrl(filename);
 
-    const downloadUrl = pdfUrlData.publicUrl;
+    const downloadUrl = `${req.protocol}://${req.get('host')}/pdf-proxy/${filename}`;
 
     res.json({
       message: 'PDF generated successfully',
@@ -427,6 +401,35 @@ app.post('/pdf/generate', async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── PDF DOWNLOAD PROXY (bypass India ban) ──────────────────────────────────
+app.get('/pdf-proxy/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    
+    // Fetch PDF from Supabase storage
+    const { data, error } = await supabase.storage
+      .from(PDFS_BUCKET)
+      .download(filename);
+    
+    if (error) {
+      console.error('PDF download error:', error);
+      return res.status(404).json({ error: 'PDF not found' });
+    }
+    
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    // Stream PDF to client
+    const buffer = await data.arrayBuffer();
+    res.send(Buffer.from(buffer));
+    
+  } catch (error) {
+    console.error('Download proxy error:', error);
+    res.status(500).json({ error: 'Download failed' });
   }
 });
 
