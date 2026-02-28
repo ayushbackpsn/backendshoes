@@ -6,8 +6,20 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
+import { dns } from 'dns';
+
+// Set custom DNS servers to bypass India ban (Supabase recommended)
+dns.setServers([
+  '1.1.1.1',        // Cloudflare (recommended by Supabase)
+  '8.8.8.8',        // Google (recommended by Supabase)  
+  '9.9.9.9',        // Quad9 (recommended by Supabase)
+  '1.0.0.1',        // Cloudflare secondary
+  '8.8.4.4'         // Google secondary
+]);
+
+console.log('DNS servers set:', dns.getServers());
+console.log('Using Supabase recommended DNS providers to bypass India ban');
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
@@ -29,8 +41,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-console.log('DEBUG: Supabase URL:', SUPABASE_URL);
-console.log('DEBUG: Supabase client initialized');
 const IMAGES_BUCKET = 'uploads';
 const PDFS_BUCKET = 'pdfs';
 
@@ -337,16 +347,12 @@ app.post('/pdf/generate', async (req, res) => {
       });
 
       const imgUrl = p.product_image || p.product_image_url || p.image_url;
-      console.log('DEBUG: Processing image URL:', imgUrl);
       if (imgUrl) {
         try {
           let imgBuf = null;
-          console.log('DEBUG: Attempting to fetch image...');
           const imgRes = await fetch(imgUrl);
-          console.log('DEBUG: Image fetch response:', imgRes.status, imgRes.ok);
           if (imgRes.ok) {
             imgBuf = Buffer.from(await imgRes.arrayBuffer());
-            console.log('DEBUG: Image fetched successfully, size:', imgBuf.length);
           }
           if (!imgBuf?.length && imgUrl.includes(IMAGES_BUCKET)) {
             const match = imgUrl.match(/\/uploads\/([^?#]+)/) || imgUrl.match(/uploads%2F([^?#&]+)/);
