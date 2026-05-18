@@ -357,6 +357,17 @@ app.post('/pdf/generate', async (req, res) => {
               align: 'center',
               valign: 'center',
             });
+            
+            // Add disclaimer beneath the image
+            doc.fontSize(10).fillColor('gray');
+            doc.text('Please note that these images are only to show stock availability; they do not reflect the actual MRP', 
+              margin, 
+              margin + 100 + imageAreaHeight + 10,
+              {
+                width: contentWidth,
+                align: 'center',
+              }
+            );
           } else {
             doc.text('Image not available', margin, margin + 100);
           }
