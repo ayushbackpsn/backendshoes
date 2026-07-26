@@ -14,6 +14,7 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { createCanvas } from 'canvas';
 
 const app = express();
 
@@ -276,6 +277,24 @@ app.post('/products', (req, res, next) => {
   }
 });
 
+// ── HELPER: Create Hindi text as image ─────────────────────────────────────
+async function createHindiTextImage(text) {
+  const canvas = createCanvas(600, 50);
+  const ctx = canvas.getContext('2d');
+  
+  // Use system font that supports Hindi
+  ctx.font = '14px sans-serif';
+  ctx.fillStyle = '#666666';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  // Draw text
+  ctx.fillText(text, 300, 25);
+  
+  // Convert to buffer
+  return canvas.toBuffer('image/png');
+}
+
 // ── PDF GENERATION ─────────────────────────────────────────────────────
 app.post('/pdf/generate', async (req, res) => {
   try {
@@ -369,16 +388,13 @@ app.post('/pdf/generate', async (req, res) => {
               }
             );
             
-            // Add disclaimer in Hindi (using default font - may show garbled text)
-            doc.fontSize(10).fillColor('gray');
-            doc.text('ये चित्र केवल स्टॉक की उपलब्धता दर्शाते हैं, आइटम के वास्तविक अधिकतम खुदरा मूल्य (MRP) को नहीं', 
-              margin, 
-              margin + 100 + imageAreaHeight + 25,
-              {
-                width: contentWidth,
-                align: 'center',
-              }
-            );
+            // Add disclaimer in Hindi as image
+            const hindiText = 'ये चित्र केवल स्टॉक की उपलब्धता दर्शाते हैं, आइटम के वास्तविक अधिकतम खुदरा मूल्य (MRP) को नहीं';
+            const hindiImageBuffer = await createHindiTextImage(hindiText);
+            doc.image(hindiImageBuffer, margin, margin + 100 + imageAreaHeight + 25, {
+              fit: [contentWidth, 30],
+              align: 'center',
+            });
           } else {
             doc.text('Image not available', margin, margin + 100);
           }
