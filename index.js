@@ -358,9 +358,9 @@ app.post('/pdf/generate', async (req, res) => {
               valign: 'center',
             });
             
-            // Add disclaimer beneath the image (English)
-            doc.fontSize(10).fillColor('gray');
-            doc.text('Please note that these images are only to show stock availability; they do not reflect the actual MRP', 
+            // Add disclaimer text (bold, black, larger font)
+            doc.fontSize(14).fillColor('black').font('Helvetica-Bold');
+            doc.text('YE PHOTO SIRF STOCK KI AVAILABILITY KE LIYE HAI, PHOTO AUR ASLI MRP ALAG HO SAKTI HAI', 
               margin, 
               margin + 100 + imageAreaHeight + 10,
               {
@@ -368,15 +368,8 @@ app.post('/pdf/generate', async (req, res) => {
                 align: 'center',
               }
             );
-            
-            // Add disclaimer in Hindi as image (using pre-made image file)
-            const hindiImagePath = path.join(__dirname, 'hindi-disclaimer.png');
-            if (fs.existsSync(hindiImagePath)) {
-              doc.image(hindiImagePath, margin, margin + 100 + imageAreaHeight + 25, {
-                fit: [contentWidth, 30],
-                align: 'center',
-              });
-            }
+            // Reset font to normal
+            doc.font('Helvetica').fontSize(12).fillColor('black');
           } else {
             doc.text('Image not available', margin, margin + 100);
           }
