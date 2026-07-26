@@ -14,7 +14,6 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { createCanvas } from 'canvas';
 
 const app = express();
 
@@ -277,22 +276,23 @@ app.post('/products', (req, res, next) => {
   }
 });
 
-// ── HELPER: Create Hindi text as image ─────────────────────────────────────
-async function createHindiTextImage(text) {
-  const canvas = createCanvas(600, 50);
-  const ctx = canvas.getContext('2d');
+// ── HELPER: Create Hindi text image using SVG ─────────────────────────────
+async function createHindiDisclaimerImage() {
+  const svgContent = `
+    <svg width="600" height="50" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="transparent"/>
+      <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="14" fill="#666666" text-anchor="middle" dominant-baseline="middle">
+        ये चित्र केवल स्टॉक की उपलब्धता दर्शाते हैं, आइटम के वास्तविक अधिकतम खुदरा मूल्य (MRP) को नहीं
+      </text>
+    </svg>
+  `;
   
-  // Use system font that supports Hindi
-  ctx.font = '14px sans-serif';
-  ctx.fillStyle = '#666666';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  const svgBuffer = Buffer.from(svgContent);
+  const pngBuffer = await sharp(svgBuffer)
+    .png()
+    .toBuffer();
   
-  // Draw text
-  ctx.fillText(text, 300, 25);
-  
-  // Convert to buffer
-  return canvas.toBuffer('image/png');
+  return pngBuffer;
 }
 
 // ── PDF GENERATION ─────────────────────────────────────────────────────
@@ -388,9 +388,8 @@ app.post('/pdf/generate', async (req, res) => {
               }
             );
             
-            // Add disclaimer in Hindi as image
-            const hindiText = 'ये चित्र केवल स्टॉक की उपलब्धता दर्शाते हैं, आइटम के वास्तविक अधिकतम खुदरा मूल्य (MRP) को नहीं';
-            const hindiImageBuffer = await createHindiTextImage(hindiText);
+            // Add disclaimer in Hindi as image (using SVG conversion)
+            const hindiImageBuffer = await createHindiDisclaimerImage();
             doc.image(hindiImageBuffer, margin, margin + 100 + imageAreaHeight + 25, {
               fit: [contentWidth, 30],
               align: 'center',
