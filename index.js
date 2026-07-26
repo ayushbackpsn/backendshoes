@@ -358,11 +358,22 @@ app.post('/pdf/generate', async (req, res) => {
               valign: 'center',
             });
             
-            // Add disclaimer beneath the image
+            // Add disclaimer beneath the image (English)
             doc.fontSize(10).fillColor('gray');
             doc.text('Please note that these images are only to show stock availability; they do not reflect the actual MRP', 
               margin, 
               margin + 100 + imageAreaHeight + 10,
+              {
+                width: contentWidth,
+                align: 'center',
+              }
+            );
+            
+            // Add disclaimer in Hindi
+            doc.fontSize(10).fillColor('gray');
+            doc.text('ये चित्र केवल स्टॉक की उपलब्धता दर्शाते हैं, आइटम के वास्तविक अधिकतम खुदरा मूल्य (MRP) को नहीं', 
+              margin, 
+              margin + 100 + imageAreaHeight + 25,
               {
                 width: contentWidth,
                 align: 'center',
