@@ -14,8 +14,6 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
 
 const app = express();
 
@@ -307,16 +305,6 @@ app.post('/pdf/generate', async (req, res) => {
       margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
 
-    // Register fontkit for custom font support (built-in to PDFKit)
-    doc.registerFontkit(require('@pdf-lib/fontkit'));
-
-    // Load Hindi-compatible font (Noto Sans Devanagari)
-    const fontPath = path.join(__dirname, 'fonts', 'NotoSansDevanagari-Regular.ttf');
-    let hindiFont = null;
-    if (fs.existsSync(fontPath)) {
-      hindiFont = doc.font(fontPath);
-    }
-
     const writeStream = fs.createWriteStream(filepath);
     doc.pipe(writeStream);
     const streamDone = new Promise((resolve, reject) => {
@@ -381,11 +369,8 @@ app.post('/pdf/generate', async (req, res) => {
               }
             );
             
-            // Add disclaimer in Hindi (using Hindi-compatible font)
+            // Add disclaimer in Hindi (using default font - may show garbled text)
             doc.fontSize(10).fillColor('gray');
-            if (hindiFont) {
-              doc.font(hindiFont);
-            }
             doc.text('ये चित्र केवल स्टॉक की उपलब्धता दर्शाते हैं, आइटम के वास्तविक अधिकतम खुदरा मूल्य (MRP) को नहीं', 
               margin, 
               margin + 100 + imageAreaHeight + 25,
@@ -394,8 +379,6 @@ app.post('/pdf/generate', async (req, res) => {
                 align: 'center',
               }
             );
-            // Reset to default font
-            doc.font('Helvetica');
           } else {
             doc.text('Image not available', margin, margin + 100);
           }
